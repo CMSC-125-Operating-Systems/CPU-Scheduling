@@ -1,7 +1,6 @@
 //queue.c for non-preemptive processes
 //First Come First Serve (FCFS) scheduling algorithm implementation
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include "process.h"

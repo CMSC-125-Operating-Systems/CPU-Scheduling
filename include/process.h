@@ -30,7 +30,7 @@ typedef struct {
 } Queue;
 
 Queue *create_queue();
-void enqueue(Queue *q, Process *process);
+void enqueue(Queue *q, Process *p);
 Process *dequeue(Queue *q);
 Process *peek(Queue *q);
 void free_queue(Queue *q);
