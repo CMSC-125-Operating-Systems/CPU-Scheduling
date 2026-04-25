@@ -1,5 +1,4 @@
-//queue.c for non-preemptive processes
-//First Come First Serve (FCFS) scheduling algorithm implementation
+// queue.c
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,12 +13,16 @@ printf("Creating queue...\n");
 
 Queue *create_queue() {
     Queue *q = (Queue *)malloc(sizeof(Queue));
-    if (q == NULL) { 
+
+    if (q == NULL) {
         fprintf(stderr, "Error: Could not allocate memory for queue\n");
         return NULL;
     }
-    q->head = q->tail = NULL;
+
+    q->head = NULL;
+    q->tail = NULL;
     q->size = 0;
+
     return q;
 }
 
@@ -34,25 +37,31 @@ Queue *create_queue() {
 //     tail = node
 //     size++
 
-printf("Enqueuing process...\n");
+printf("Enqueuing process %s...\n", process->pid);
 
 void enqueue(Queue *q, Process *process) {
+    Node *node;
+
     if (q == NULL || process == NULL) {
         fprintf(stderr, "Error: Queue or process is NULL\n");
         return;
     }
-    Node *node = (Node *)malloc(sizeof(Node)); //allocating new node
+
+    node = (Node *)malloc(sizeof(Node));
     if (node == NULL) {
         fprintf(stderr, "Error: Could not allocate memory for node\n");
         return;
     }
-    node->process = process;
+
+    node->proc = process;
     node->next = NULL;
-    if (q->tail) {
+
+    if (q->tail != NULL) {
         q->tail->next = node;
     } else {
-        q->head = node;  //empty queue, node is also head
+        q->head = node;
     }
+
     q->tail = node;
     q->size++;
 }
@@ -69,45 +78,39 @@ void enqueue(Queue *q, Process *process) {
 printf("Dequeuing process...\n");
 
 Process *dequeue(Queue *q) {
+    Node *node;
+    Process *process;
+
     if (q == NULL || q->head == NULL) {
-        return NULL; //empty queue
+        return NULL;
     }
-    Node *node = q->head; //save head node
-    q->head = node->next; //move head to next
-    Process *process = node->process; //get process to return
+
+    node = q->head;
+    q->head = node->next;
+    process = node->proc;
+
     if (q->head == NULL) {
-        q->tail = NULL; //queue now empty
+        q->tail = NULL;
     }
+
     free(node);
     q->size--;
+
     return process;
 }
 
-// peek(queue):
-//     return head.proc (or NULL if empty)   ← no removal
-
-printf("Peeking at front of queue...\n");
-
 Process *peek(Queue *q) {
     if (q == NULL || q->head == NULL) {
-        return NULL; //empty queue
-    }
-    return q->head->process; //return process at head without removing
-}
-
-// free_queue(queue):
-//     while head exists → dequeue()         ← drain all nodes
-//     free queue struct
-
-printf("Freeing queue...\n");
-
-Process *free_queue(Queue *q) {
-    if (q == NULL) {
         return NULL;
     }
-    while (q->head) {
-        dequeue(q); //drain all nodes
+
+    return q->head->proc;
+}
+
+void free_queue(Queue *q) {
+    while (q != NULL && q->head != NULL) {
+        dequeue(q);
     }
-    free(q); //free queue struct
-    return NULL;
+
+    free(q);
 }

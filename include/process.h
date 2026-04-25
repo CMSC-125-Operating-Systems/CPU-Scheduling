@@ -1,3 +1,5 @@
+#ifndef PROCESS_H
+#define PROCESS_H
 #include <stdio.h>
 
 #define MAX_PID_LENGTH 16
