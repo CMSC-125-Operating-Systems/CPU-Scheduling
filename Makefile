@@ -1,26 +1,21 @@
-# all: Compile the shell
-# clean: Remove binaries and object files
-
 CC=gcc
-CFLAGS= -Wall
+CFLAGS=-Wall -Wextra -std=c11 -Iinclude
 
-
-_OBJ = src/main.c
-OBJ = $(_OBJ)
-
-%.o: %.c 
-	@$(CC) -c -o $@ $< $(CFLAGS)
+SRC=$(wildcard src/*.c)
+OBJ=$(SRC:.c=.o)
 
 all: schedsim
 
 schedsim: $(OBJ)
-	@$(CC) -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $(OBJ)
 
-.PHONY: clean
+%.o: %.c
+	$(CC) $(CFLAGS) -c -o $@ $<
 
-clean: 
-	@rm -f src/*.o schedsim
-	@rm -f core *~
-# 	@rm -f test_out.txt
+clean:
+	rm -f src/*.o schedsim
 
-test:
+test: schedsim
+	bash tests/test_suite.sh
+
+.PHONY: all clean test

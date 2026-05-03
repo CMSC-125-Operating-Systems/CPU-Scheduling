@@ -1,6 +1,3 @@
-#ifndef SCHEDULER_H
-#define SCHEDULER_H
-#include "process.h"
 
 //IMPLEMENTATION 
 
@@ -34,6 +31,24 @@
 // int schedule_rr(SchedulerState *state, int quantum);
 // int schedule_mlfq(SchedulerState *state, MLFQConfig *config);
 
+#ifndef SCHEDULER_H
+#define SCHEDULER_H
 
+#include "gantt.h"
+#include "process.h"
+
+typedef enum {
+    ALG_FCFS,
+    ALG_SJF,
+    ALG_STCF,
+    ALG_RR,
+    ALG_MLFQ
+} Algorithm;
+
+int schedule_fcfs(Process processes[], int count, GanttChart *chart);
+int schedule_sjf(Process processes[], int count, GanttChart *chart);
+int schedule_stcf(Process processes[], int count, GanttChart *chart);
+int schedule_rr(Process processes[], int count, int quantum, GanttChart *chart);
+int schedule_mlfq(Process processes[], int count, const int quantums[], const int allotments[], int levels, int boost_period, GanttChart *chart);
 
 #endif
