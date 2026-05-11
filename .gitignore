@@ -1,0 +1,9 @@
+# Compiled Object files
+src/*.o
+
+# The final executable
+schedsim
+
+# Temporary files or editor backups
+*~
+*.swp
