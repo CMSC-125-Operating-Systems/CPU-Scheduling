@@ -12,7 +12,6 @@
 //     count = 0
 //     return chart
 
-printf("Creating Gantt chart...\n");
 
 GanttChart *create_gantt() {
     GanttChart *chart = (GanttChart *)malloc(sizeof(GanttChart));
@@ -43,8 +42,6 @@ GanttChart *create_gantt() {
 //     ── APPEND ──
 //     entries[count] = {pid, start, end}
 //     count++
-
-printf("Adding entry to Gantt chart: PID=%s, start=%d, end=%d\n", pid, start, end);
 
 void add_gantt(GanttChart *chart, const char *pid, int start, int end) {
     GanttEntry *last;
@@ -102,9 +99,9 @@ int gantt_context_switches(const GanttChart *chart) {
 //     print bot border  (+---+---+)
 //     print time labels (0   10  20)
 
-printf("Printing Gantt chart...\n");
 void print_gantt(GanttChart *chart) {
     int i;
+    printf("\n=== Gantt Chart ===\n");
 
     if (chart == NULL || chart->count == 0) {
         printf("Gantt chart is empty.\n");
@@ -112,27 +109,13 @@ void print_gantt(GanttChart *chart) {
     }
 
     for (i = 0; i < chart->count; i++) {
-        printf("+---");
+        printf("[%s %d-%d] ", chart->entries[i].pid,
+               chart->entries[i].start,
+               chart->entries[i].end);
     }
-    printf("+\n");
 
-    for (i = 0; i < chart->count; i++) {
-        printf("| %s ", chart->entries[i].pid);
-    }
-    printf("|\n");
-
-    for (i = 0; i < chart->count; i++) {
-        printf("+---");
-    }
-    printf("+\n");
-
-    for (i = 0; i < chart->count; i++) {
-        printf("%-4d", chart->entries[i].start);
-    }
-    printf("%-4d\n", chart->entries[chart->count - 1].end);
+    printf("\n");
 }
-
-printf("Freeing Gantt chart...\n");
 
 void free_gantt(GanttChart *chart) {
     free(chart);
