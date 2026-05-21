@@ -54,12 +54,17 @@ run_test \
 run_test \
     "RR quantum workload" \
     "./schedsim --algorithm=RR --quantum=2 --processes='A:0:5,B:1:3,C:2:1'" \
-    "Using time quantum q=2"
+    "[A 0-2]"
 
 run_test \
     "MLFQ basic workload" \
     "./schedsim --algorithm=MLFQ --input=tests/workload1.txt" \
     "MLFQ Configuration"
+
+run_test \
+    "MLFQ config file" \
+    "./schedsim --algorithm=MLFQ --mlfq-config=tests/mlfq_config.txt --input=tests/workload1.txt" \
+    "Boost period: 200"
 
 run_test \
     "Compare mode" \
