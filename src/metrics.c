@@ -42,7 +42,11 @@ void compute_metrics(const Process processes[], int count, int total_time, Metri
     metrics->avg_turnaround = total_tt / count;
     metrics->avg_waiting = total_wt / count;
     metrics->avg_response = total_rt / count;
+    if (total_time > 0) {
     metrics->throughput = (double)count / total_time;
+    } else {
+        metrics->throughput = 0.0;
+    }
 }
 
 void print_metrics(const Process processes[], int count, const Metrics *metrics) {

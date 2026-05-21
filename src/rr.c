@@ -18,7 +18,7 @@ static void enqueue_arrivals(Process processes[], int count, Queue *ready, int c
     for (int i = 0; i < count; i++) {
         if (!processes[i].completed &&
             !processes[i].queued &&
-            processes[i].arrival_time <= current_time) {
+            processes[i].arrival_time == current_time) {
             enqueue(ready, &processes[i]);
             processes[i].queued = 1;
         }
