@@ -14,7 +14,7 @@ static int completed_count(Process processes[], int count) {
     return completed;
 }
 
-static void enqueue_arrivals(Process processes[], int count, Queue *queues[], int current_time) {
+static void enqueue_arrivals(Process processes[], int count, Queue *queues[], int current_time, int print_trace) {
     for (int i = 0; i < count; i++) {
         if (!processes[i].completed &&
             !processes[i].queued &&
@@ -24,7 +24,9 @@ static void enqueue_arrivals(Process processes[], int count, Queue *queues[], in
             enqueue(queues[0], &processes[i]);
             processes[i].queued = 1;
 
-            printf("t=%d: Process %s enters Q0\n", current_time, processes[i].pid);
+            if (print_trace) { 
+                printf("t=%d: Process %s enters Q0\n", current_time, processes[i].pid);
+            }
         }
     }
 }
@@ -103,27 +105,33 @@ int schedule_mlfq(SchedulerState *state, MLFQConfig *config) {
             return -1;
         }
     }
+    
+    if (config->print_trace) {
+        printf("\n=== MLFQ Configuration ===\n");
 
-    printf("\n=== MLFQ Configuration ===\n");
-    for (int i = 0; i < config->levels; i++) {
-        if (config->quantums[i] <= 0) {
-            printf("Queue %d: FCFS-like lowest queue\n", i);
-        } else {
-            printf("Queue %d: quantum=%d, allotment=%d\n",
-                   i, config->quantums[i], config->allotments[i]);
+        for (int i = 0; i < config->levels; i++) {
+            if (config->quantums[i] <= 0) {
+                printf("Queue %d: FCFS-like lowest queue\n", i);
+            } else {
+                printf("Queue %d: quantum=%d, allotment=%d\n",
+                    i, config->quantums[i], config->allotments[i]);
+            }
         }
-    }
-    printf("Boost period: %d\n", config->boost_period);
 
-    printf("\n=== Execution Trace ===\n");
+        printf("Boost period: %d\n", config->boost_period);
+        printf("\n=== Execution Trace ===\n");
+    }
+    
 
     while (completed_count(state->processes, state->num_processes) < state->num_processes) {
-        enqueue_arrivals(state->processes, state->num_processes, queues, current_time);
+        enqueue_arrivals(state->processes, state->num_processes, queues, current_time, config->print_trace);
 
         if (config->boost_period > 0 &&
             current_time > 0 &&
             current_time - last_boost >= config->boost_period) {
-            printf("t=%d: Priority boost, ready processes moved to Q0\n", current_time);
+            if (config->print_trace) {
+                printf("t=%d: Priority boost, ready processes moved to Q0\n", current_time);
+            }
             priority_boost(queues, config->levels);
             last_boost = current_time;
         }
@@ -157,7 +165,7 @@ int schedule_mlfq(SchedulerState *state, MLFQConfig *config) {
             used_this_turn++;
             current_time++;
 
-            enqueue_arrivals(state->processes, state->num_processes, queues, current_time);
+            enqueue_arrivals(state->processes, state->num_processes, queues, current_time, config->print_trace);
 
             if (p->remaining_time == 0) {
                 break;
@@ -166,7 +174,9 @@ int schedule_mlfq(SchedulerState *state, MLFQConfig *config) {
             if (config->boost_period > 0 &&
                 current_time > 0 &&
                 current_time - last_boost >= config->boost_period) {
-                printf("t=%d: Priority boost, ready processes moved to Q0\n", current_time);
+                if (config->print_trace) {
+                    printf("t=%d: Priority boost, ready processes moved to Q0\n", current_time);
+                }
                 priority_boost(queues, config->levels);
                 p->priority = 0;
                 p->time_in_queue = 0;
@@ -190,14 +200,17 @@ int schedule_mlfq(SchedulerState *state, MLFQConfig *config) {
             p->waiting_time = p->turnaround_time - p->burst_time;
             p->completed = 1;
 
-            printf("t=%d: Process %s completes\n", current_time, p->pid);
+            if (config->print_trace) {
+                printf("t=%d: Process %s completes\n", current_time, p->pid);
+            }
         } else {
             if (!boosted_this_turn && allotment > 0 && p->time_in_queue >= allotment && p->priority < config->levels - 1) {
                 p->priority++;
                 p->time_in_queue = 0;
 
-                printf("t=%d: Process %s demoted to Q%d\n",
-                       current_time, p->pid, p->priority);
+                if (config->print_trace) {
+                    printf("t=%d: Process %s demoted to Q%d\n", current_time, p->pid, p->priority);
+                }
             }
 
             enqueue(queues[p->priority], p);

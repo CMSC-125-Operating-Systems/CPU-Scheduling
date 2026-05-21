@@ -16,6 +16,7 @@ typedef struct {
     int quantums[8];
     int allotments[8];
     int boost_period;
+    int print_trace;
 } MLFQConfig;
 
 int schedule_fcfs(SchedulerState *state);

@@ -67,9 +67,54 @@ static void default_mlfq_config(MLFQConfig *config) {
     config->allotments[2] = -1;
 
     config->boost_period = 200;
+
+    config->print_trace = 1;
 }
 
-static int run_algorithm(Algorithm algorithm, Process original[], int count, int quantum, int print_full) {
+static int load_mlfq_config(const char *path, MLFQConfig *config) {
+    FILE *file;
+    char label[32];
+    int quantum;
+    int allotment;
+    int level_count = 0;
+    char line[256];
+
+    default_mlfq_config(config);
+
+    file = fopen(path, "r");
+    if (file == NULL) {
+        perror("mlfq config");
+        return -1;
+    }
+
+    while (fgets(line, sizeof(line), file) != NULL) {
+        if (line[0] == '#' || line[0] == '\n') {
+            continue;
+        }
+
+        if (sscanf(line, "BOOST_PERIOD %d", &config->boost_period) == 1) {
+            continue;
+        }
+
+        if (sscanf(line, "%31s %d %d", label, &quantum, &allotment) == 3) {
+            if (label[0] == 'Q' && level_count < 8) {
+                config->quantums[level_count] = quantum;
+                config->allotments[level_count] = allotment;
+                level_count++;
+            }
+        }
+    }
+
+    fclose(file);
+
+    if (level_count >= 3) {
+        config->levels = level_count;
+    }
+
+    return 0;
+}
+
+static int run_algorithm(Algorithm algorithm, Process original[], int count, int quantum, const char *mlfq_config_path, int print_full) {
     Process working[MAX_PROCESSES];
     GanttChart *chart;
     SchedulerState state;
@@ -111,7 +156,15 @@ static int run_algorithm(Algorithm algorithm, Process original[], int count, int
             status = schedule_rr(&state, quantum);
             break;
         case ALG_MLFQ:
-            default_mlfq_config(&mlfq_config);
+            if (mlfq_config_path != NULL) {
+                status = load_mlfq_config(mlfq_config_path, &mlfq_config);
+                if (status != 0) {
+                    break;
+                }
+            } else {
+                default_mlfq_config(&mlfq_config);
+            }
+            mlfq_config.print_trace = print_full;
             status = schedule_mlfq(&state, &mlfq_config);
             break;
         default:
@@ -143,17 +196,17 @@ static int run_algorithm(Algorithm algorithm, Process original[], int count, int
     return 0;
 }
 
-static int run_compare(Process processes[], int count, int quantum) {
+static int run_compare(Process processes[], int count, int quantum, const char *mlfq_config_path) {
     printf("\n=== Algorithm Comparison ===\n");
     printf("%-10s | %8s | %8s | %8s | %16s\n",
            "Algorithm", "Avg TT", "Avg WT", "Avg RT", "Context Switches");
     printf("-----------------------------------------------------------------\n");
 
-    run_algorithm(ALG_FCFS, processes, count, quantum, 0);
-    run_algorithm(ALG_SJF, processes, count, quantum, 0);
-    run_algorithm(ALG_STCF, processes, count, quantum, 0);
-    run_algorithm(ALG_RR, processes, count, quantum, 0);
-    run_algorithm(ALG_MLFQ, processes, count, quantum, 0);
+    run_algorithm(ALG_FCFS, processes, count, quantum, NULL, 0);
+    run_algorithm(ALG_SJF, processes, count, quantum, NULL, 0);
+    run_algorithm(ALG_STCF, processes, count, quantum, NULL, 0);
+    run_algorithm(ALG_RR, processes, count, quantum, NULL, 0);
+    run_algorithm(ALG_MLFQ, processes, count, quantum, mlfq_config_path, 0);
 
     return 0;
 }
@@ -167,6 +220,7 @@ int main(int argc, char *argv[]) {
     Algorithm algorithm = ALG_FCFS;
     const char *input_path = NULL;
     const char *inline_processes = NULL;
+    const char *mlfq_config_path = NULL;
 
     for (int i = 1; i < argc; i++) {
         if (strncmp(argv[i], "--algorithm=", 12) == 0) {
@@ -186,6 +240,8 @@ int main(int argc, char *argv[]) {
         } else if (strcmp(argv[i], "--help") == 0) {
             usage(argv[0]);
             return 0;
+        } else if (strncmp(argv[i], "--mlfq-config=", 14) == 0) {
+            mlfq_config_path = argv[i] + 14;
         } else {
             fprintf(stderr, "Unknown option: %s\n", argv[i]);
             usage(argv[0]);
@@ -209,12 +265,12 @@ int main(int argc, char *argv[]) {
     init_processes(processes, count);
 
     if (compare) {
-        return run_compare(processes, count, quantum);
+        return run_compare(processes, count, quantum, mlfq_config_path);
     }
 
     if (!algorithm_set) {
         fprintf(stderr, "No algorithm specified. Defaulting to FCFS.\n");
     }
 
-    return run_algorithm(algorithm, processes, count, quantum, 1);
+    return run_algorithm(algorithm, processes, count, quantum, mlfq_config_path, 1);
 }
