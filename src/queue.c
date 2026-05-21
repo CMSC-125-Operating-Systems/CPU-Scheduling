@@ -9,8 +9,6 @@
 //     head = tail = NULL, size = 0
 //     return queue
 
-printf("Creating queue...\n");
-
 Queue *create_queue() {
     Queue *q = (Queue *)malloc(sizeof(Queue));
 
@@ -36,8 +34,6 @@ Queue *create_queue() {
 //         head = node        ← empty queue, node is also head
 //     tail = node
 //     size++
-
-printf("Enqueuing process %s...\n", process->pid);
 
 void enqueue(Queue *q, Process *process) {
     Node *node;
@@ -74,8 +70,6 @@ void enqueue(Queue *q, Process *process) {
 //     free old node
 //     size--
 //     return saved process
-
-printf("Dequeuing process...\n");
 
 Process *dequeue(Queue *q) {
     Node *node;
