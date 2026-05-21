@@ -34,6 +34,16 @@ void reset_process(Process *process) {
     process->time_in_queue = 0;
     process->completed = 0;
     process->queued = 0;
+
+    if (process->burst_time == 0) {
+        process->start_time = process->arrival_time;
+        process->finish_time = process->arrival_time;
+        process->completed = 1;
+    } else {
+        process->start_time = -1;
+        process->finish_time = -1;
+        process->completed = 0;
+    }
 }
 
 void init_processes(Process processes[], int count) {
