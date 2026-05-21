@@ -18,7 +18,7 @@ static void enqueue_arrivals(Process processes[], int count, Queue *queues[], in
     for (int i = 0; i < count; i++) {
         if (!processes[i].completed &&
             !processes[i].queued &&
-            processes[i].arrival_time <= current_time) {
+            processes[i].arrival_time == current_time) {
             processes[i].priority = 0;
             processes[i].time_in_queue = 0;
             enqueue(queues[0], &processes[i]);
@@ -30,7 +30,13 @@ static void enqueue_arrivals(Process processes[], int count, Queue *queues[], in
 }
 
 static void priority_boost(Queue *queues[], int levels) {
-    for (int level = 1; level < levels; level++) {
+    Queue *boosted = create_queue();
+
+    if (boosted == NULL) {
+        return;
+    }
+
+    for (int level = 0; level < levels; level++) {
         while (queues[level]->size > 0) {
             Process *p = dequeue(queues[level]);
             p->queued = 0;
@@ -38,11 +44,19 @@ static void priority_boost(Queue *queues[], int levels) {
             if (!p->completed && p->remaining_time > 0) {
                 p->priority = 0;
                 p->time_in_queue = 0;
-                enqueue(queues[0], p);
+                enqueue(boosted, p);
                 p->queued = 1;
             }
         }
     }
+
+    while (boosted->size > 0) {
+        Process *p = dequeue(boosted);
+        enqueue(queues[0], p);
+        p->queued = 1;
+    }
+
+    free_queue(boosted);
 }
 
 static int highest_nonempty_queue(Queue *queues[], int levels) {
@@ -53,6 +67,16 @@ static int highest_nonempty_queue(Queue *queues[], int levels) {
     }
 
     return -1;
+}
+
+static int has_higher_priority_work(Queue *queues[], int current_level) {
+    for (int level = 0; level < current_level; level++) {
+        if (queues[level]->size > 0) {
+            return 1;
+        }
+    }
+
+    return 0;
 }
 
 int schedule_mlfq(SchedulerState *state, MLFQConfig *config) {
@@ -123,12 +147,9 @@ int schedule_mlfq(SchedulerState *state, MLFQConfig *config) {
         int quantum = config->quantums[level];
         int allotment = config->allotments[level];
         int used_this_turn = 0;
+        int boosted_this_turn = 0;
 
-        if (quantum <= 0) {
-            quantum = p->remaining_time;
-        }
-
-        while (used_this_turn < quantum && p->remaining_time > 0) {
+        while (p->remaining_time > 0 && (quantum <= 0 || used_this_turn < quantum)) {
             add_gantt(state->chart, p->pid, current_time, current_time + 1);
 
             p->remaining_time--;
@@ -147,7 +168,14 @@ int schedule_mlfq(SchedulerState *state, MLFQConfig *config) {
                 current_time - last_boost >= config->boost_period) {
                 printf("t=%d: Priority boost, ready processes moved to Q0\n", current_time);
                 priority_boost(queues, config->levels);
+                p->priority = 0;
+                p->time_in_queue = 0;
                 last_boost = current_time;
+                boosted_this_turn = 1;
+                break;
+            }
+
+            if (has_higher_priority_work(queues, p->priority)) {
                 break;
             }
 
@@ -164,9 +192,7 @@ int schedule_mlfq(SchedulerState *state, MLFQConfig *config) {
 
             printf("t=%d: Process %s completes\n", current_time, p->pid);
         } else {
-            if (allotment > 0 &&
-                p->time_in_queue >= allotment &&
-                p->priority < config->levels - 1) {
+            if (!boosted_this_turn && allotment > 0 && p->time_in_queue >= allotment && p->priority < config->levels - 1) {
                 p->priority++;
                 p->time_in_queue = 0;
 
